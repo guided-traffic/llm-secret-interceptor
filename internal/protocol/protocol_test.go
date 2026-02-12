@@ -12,12 +12,20 @@ func TestOpenAIHandler_Name(t *testing.T) {
 	}
 }
 
+func TestOpenAIHandler_Priority(t *testing.T) {
+	h := NewOpenAIHandler()
+	if h.Priority() != 100 {
+		t.Errorf("Priority() = %d, want 100", h.Priority())
+	}
+}
+
 func TestOpenAIHandler_CanHandle(t *testing.T) {
 	h := NewOpenAIHandler()
 
 	testCases := []struct {
 		name   string
 		path   string
+		host   string
 		method string
 		want   bool
 	}{
@@ -34,6 +42,19 @@ func TestOpenAIHandler_CanHandle(t *testing.T) {
 			want:   true,
 		},
 		{
+			name:   "azure openai",
+			path:   "/openai/deployments/gpt-4/chat/completions",
+			method: "POST",
+			want:   true,
+		},
+		{
+			name:   "github copilot host",
+			path:   "/v1/completions",
+			host:   "api.githubcopilot.com",
+			method: "POST",
+			want:   true,
+		},
+		{
 			name:   "other endpoint",
 			path:   "/v1/embeddings",
 			method: "POST",
@@ -43,7 +64,11 @@ func TestOpenAIHandler_CanHandle(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			req, _ := http.NewRequest(tc.method, "https://api.openai.com"+tc.path, nil)
+			host := tc.host
+			if host == "" {
+				host = "api.openai.com"
+			}
+			req, _ := http.NewRequest(tc.method, "https://"+host+tc.path, nil)
 			req.Header.Set("Content-Type", "application/json")
 
 			got := h.CanHandle(req)
