@@ -16,9 +16,11 @@ import (
 )
 
 var (
-	// Version information - set at build time
-	Version   = "dev"
+	// Version is the application version, set at build time via ldflags.
+	Version = "dev"
+	// GitCommit is the git commit hash, set at build time via ldflags.
 	GitCommit = "unknown"
+	// BuildTime is the build timestamp, set at build time via ldflags.
 	BuildTime = "unknown"
 )
 
