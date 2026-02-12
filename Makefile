@@ -88,7 +88,7 @@ coverage: test-unit-coverage
 ## lint: Run linter
 lint:
 	@echo "Running linter..."
-	@which golangci-lint > /dev/null || go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	golangci-lint run ./...
 
 ## fmt: Format code
