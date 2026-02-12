@@ -129,28 +129,42 @@ deps:
 docker-build:
 	@echo "Building Docker image..."
 	docker build \
-		--build-arg BUILD_NUMBER=$(VERSION) \
+		--build-arg VERSION=$(VERSION) \
 		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
 		--build-arg BUILD_TIME=$(BUILD_TIME) \
 		-t $(BINARY_NAME):$(VERSION) \
 		-t $(BINARY_NAME):latest \
-		-f Containerfile .
+		.
 
 ## docker-run: Run Docker container
 docker-run: docker-build
 	docker run -it --rm \
 		-p 8080:8080 \
 		-p 9090:9090 \
-		-v $(PWD)/configs/config.example.yaml:/app/config.yaml:ro \
+		-v $(PWD)/certs:/app/certs \
+		-v $(PWD)/configs/config.yaml:/app/configs/config.yaml:ro \
 		$(BINARY_NAME):latest
+
+## docker-compose-up: Start with Docker Compose
+docker-compose-up:
+	@echo "Starting with Docker Compose..."
+	VERSION=$(VERSION) GIT_COMMIT=$(GIT_COMMIT) BUILD_TIME=$(BUILD_TIME) \
+		docker compose up --build -d
+
+## docker-compose-down: Stop Docker Compose
+docker-compose-down:
+	@echo "Stopping Docker Compose..."
+	docker compose down
+
+## docker-compose-logs: View Docker Compose logs
+docker-compose-logs:
+	docker compose logs -f
 
 ## generate-ca: Generate self-signed CA certificate
 generate-ca:
 	@echo "Generating CA certificate..."
 	@mkdir -p certs
-	openssl genrsa -out certs/ca.key 4096
-	openssl req -new -x509 -days 3650 -key certs/ca.key -out certs/ca.crt \
-		-subj "/CN=LLM Secret Interceptor CA/O=LLM Secret Interceptor/C=DE"
+	$(BIN_DIR)/$(BINARY_NAME) generate-ca certs/ca.crt certs/ca.key
 	@echo "CA certificate generated in certs/"
 
 ## install-ca-macos: Install CA certificate on macOS

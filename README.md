@@ -119,24 +119,72 @@ Ein HTTPS-Proxy-Server, der Secrets in LLM-Kommunikation erkennt, maskiert und n
 
 ## 📦 Installation
 
-### Docker (empfohlen)
+### Docker Compose (empfohlen)
+
+Der einfachste Weg, den Proxy zu starten:
 
 ```bash
-docker pull ghcr.io/your-org/llm-secret-interceptor:latest
+# Repository klonen
+git clone https://github.com/hfi/llm-secret-interceptor.git
+cd llm-secret-interceptor
 
+# Konfiguration anpassen (optional)
+cp configs/config.example.yaml configs/config.yaml
+
+# Starten mit Docker Compose
+docker compose up -d
+
+# Logs anzeigen
+docker compose logs -f proxy
+```
+
+Der Proxy ist nun erreichbar unter:
+- **Proxy:** `http://localhost:8080`
+- **Metrics/Health:** `http://localhost:9090`
+
+### Docker (manuell)
+
+```bash
+# Image bauen
+docker build -t llm-secret-interceptor:latest .
+
+# Container starten
 docker run -d \
+  --name llm-proxy \
   -p 8080:8080 \
-  -v $(pwd)/config.yaml:/app/config.yaml \
+  -p 9090:9090 \
   -v $(pwd)/certs:/app/certs \
-  ghcr.io/your-org/llm-secret-interceptor:latest
+  -v $(pwd)/configs/config.yaml:/app/configs/config.yaml:ro \
+  llm-secret-interceptor:latest
 ```
 
 ### Build from Source
 
 ```bash
-git clone https://github.com/your-org/llm-secret-interceptor.git
+# Repository klonen
+git clone https://github.com/hfi/llm-secret-interceptor.git
 cd llm-secret-interceptor
-go build -o llm-secret-interceptor ./cmd/proxy
+
+# Binary bauen
+make build
+
+# CA-Zertifikat generieren
+make generate-ca
+
+# Proxy starten
+./bin/llm-secret-interceptor
+```
+
+### CA-Zertifikat generieren
+
+Beim ersten Start wird automatisch ein CA-Zertifikat generiert. Manuell:
+
+```bash
+# Über das Binary
+./bin/llm-secret-interceptor generate-ca [cert-path] [key-path]
+
+# Über Make
+make generate-ca
 ```
 
 ## ⚙️ Konfiguration

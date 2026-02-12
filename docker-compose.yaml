@@ -1,69 +1,68 @@
-version: '3.8'
-
 services:
-  llm-secret-interceptor:
+  proxy:
     build:
       context: .
-      dockerfile: Containerfile
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${VERSION:-dev}
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+    image: llm-secret-interceptor:${VERSION:-latest}
+    container_name: llm-secret-interceptor
+    restart: unless-stopped
     ports:
       - "8080:8080"   # Proxy
-      - "9090:9090"   # Metrics
+      - "9090:9090"   # Metrics/Health
     volumes:
-      - ./configs/config.example.yaml:/app/config.yaml:ro
-      - ./certs:/app/certs:ro
+      # Persist CA certificates
+      - ./certs:/app/certs
+      # Mount custom config (optional)
+      - ./configs/config.yaml:/app/configs/config.yaml:ro
     environment:
-      - CONFIG_PATH=/app/config.yaml
+      # Proxy settings
+      - LLM_PROXY_LISTEN=:8080
+      - LLM_PROXY_METRICS_PORT=9090
+      
+      # TLS settings
+      - LLM_PROXY_TLS_CA_CERT=/app/certs/ca.crt
+      - LLM_PROXY_TLS_CA_KEY=/app/certs/ca.key
+      
+      # Storage settings (use redis for multi-instance)
+      - LLM_PROXY_STORAGE_TYPE=${STORAGE_TYPE:-memory}
+      - LLM_PROXY_REDIS_ADDR=redis:6379
+      
+      # Logging
+      - LLM_PROXY_LOG_LEVEL=${LOG_LEVEL:-info}
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     networks:
-      - llm-proxy
+      - llm-proxy-net
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    container_name: llm-proxy-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
     volumes:
       - redis-data:/data
-    networks:
-      - llm-proxy
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Optional: Prometheus for metrics
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - "9091:9090"
-    volumes:
-      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus-data:/prometheus
+      timeout: 3s
+      retries: 3
     networks:
-      - llm-proxy
-    profiles:
-      - monitoring
-
-  # Optional: Grafana for dashboards
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    networks:
-      - llm-proxy
-    profiles:
-      - monitoring
-
-networks:
-  llm-proxy:
-    driver: bridge
+      - llm-proxy-net
 
 volumes:
   redis-data:
-  prometheus-data:
-  grafana-data:
+
+networks:
+  llm-proxy-net:
+    driver: bridge
