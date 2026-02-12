@@ -3,11 +3,13 @@ package interceptor
 import (
 	"math"
 	"regexp"
+	"strings"
 	"unicode"
 )
 
 // EntropyInterceptor detects high-entropy strings that might be secrets
 type EntropyInterceptor struct {
+	BaseInterceptor
 	threshold float64
 	minLength int
 	maxLength int
@@ -16,9 +18,10 @@ type EntropyInterceptor struct {
 // NewEntropyInterceptor creates a new entropy-based interceptor
 func NewEntropyInterceptor(threshold float64, minLength, maxLength int) *EntropyInterceptor {
 	return &EntropyInterceptor{
-		threshold: threshold,
-		minLength: minLength,
-		maxLength: maxLength,
+		BaseInterceptor: BaseInterceptor{enabled: true},
+		threshold:       threshold,
+		minLength:       minLength,
+		maxLength:       maxLength,
 	}
 }
 
@@ -121,27 +124,60 @@ func (e *EntropyInterceptor) entropyToConfidence(entropy float64) float64 {
 
 // isLikelyNotSecret checks if a string is likely not a secret
 func (e *EntropyInterceptor) isLikelyNotSecret(s string) bool {
+	lower := strings.ToLower(s)
+
 	// All lowercase and looks like a word/path
 	allLower := true
+	hasDigit := false
 	for _, c := range s {
-		if unicode.IsUpper(c) || unicode.IsDigit(c) {
+		if unicode.IsUpper(c) {
 			allLower = false
-			break
+		}
+		if unicode.IsDigit(c) {
+			hasDigit = true
 		}
 	}
-	if allLower {
+	if allLower && !hasDigit {
 		return true
 	}
 
-	// Common patterns that aren't secrets
+	// Common programming keywords and identifiers
 	commonPatterns := []string{
 		"function", "return", "import", "export",
 		"const", "class", "interface", "package",
+		"undefined", "null", "true", "false",
+		"string", "number", "boolean", "object",
+		"async", "await", "promise", "callback",
+		"localhost", "githubusercontent", "example",
 	}
 	for _, p := range commonPatterns {
-		if s == p {
+		if lower == p {
 			return true
 		}
+	}
+
+	// File paths and URLs
+	if strings.HasPrefix(s, "/") || strings.HasPrefix(s, "./") ||
+		strings.HasPrefix(lower, "http") || strings.HasPrefix(lower, "www") {
+		return true
+	}
+
+	// Looks like a file extension or path component
+	if strings.HasPrefix(s, ".") || strings.HasSuffix(lower, ".js") ||
+		strings.HasSuffix(lower, ".ts") || strings.HasSuffix(lower, ".go") ||
+		strings.HasSuffix(lower, ".py") || strings.HasSuffix(lower, ".json") {
+		return true
+	}
+
+	// Base64 padding without enough entropy
+	if strings.HasSuffix(s, "==") && len(s) < 20 {
+		return true
+	}
+
+	// UUIDs are often not secrets (but can be)
+	uuidPattern := regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+	if uuidPattern.MatchString(lower) {
+		return true
 	}
 
 	return false
