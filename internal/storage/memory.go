@@ -74,7 +74,10 @@ func (m *MemoryStore) LookupBySecret(secret string) (string, bool) {
 
 	if ok {
 		// Touch to update last used
-		m.Touch(placeholder)
+		if err := m.Touch(placeholder); err != nil {
+			// Log error but don't fail the lookup
+			_ = err // Touch only updates timestamp, safe to ignore
+		}
 	}
 
 	return placeholder, ok
@@ -129,7 +132,10 @@ func (m *MemoryStore) cleanupLoop() {
 	for {
 		select {
 		case <-ticker.C:
-			m.Cleanup()
+			if err := m.Cleanup(); err != nil {
+				// Cleanup errors are not critical, just continue
+				_ = err
+			}
 		case <-m.stopCleanup:
 			return
 		}

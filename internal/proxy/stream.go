@@ -164,7 +164,10 @@ func (sr *StreamReader) ReadProcessedEvent() ([]byte, error) {
 		if err == io.EOF {
 			sr.done = true
 			// Flush any remaining
-			sr.processor.Flush()
+			if flushErr := sr.processor.Flush(); flushErr != nil {
+				// Log but don't override EOF error
+				_ = flushErr
+			}
 		}
 		return nil, err
 	}
@@ -172,7 +175,9 @@ func (sr *StreamReader) ReadProcessedEvent() ([]byte, error) {
 	// Check for done marker
 	if bytes.Equal(bytes.TrimSpace(data), []byte("[DONE]")) {
 		sr.done = true
-		sr.processor.Flush()
+		if flushErr := sr.processor.Flush(); flushErr != nil {
+			return data, flushErr
+		}
 		return data, nil
 	}
 

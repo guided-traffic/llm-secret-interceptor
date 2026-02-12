@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -148,6 +149,9 @@ func Load() (*Config, error) {
 	if configPath == "" {
 		configPath = "config.yaml"
 	}
+
+	// Clean path to prevent path traversal
+	configPath = filepath.Clean(configPath)
 
 	// Try to load config file
 	data, err := os.ReadFile(configPath)

@@ -110,7 +110,7 @@ func (l *Logger) setupOutput() error {
 		output = os.Stderr
 	default:
 		// File output
-		f, err := os.OpenFile(l.config.Output, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		f, err := os.OpenFile(l.config.Output, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
 			return err
 		}

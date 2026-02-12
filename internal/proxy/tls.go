@@ -27,6 +27,10 @@ type CertManager struct {
 
 // NewCertManager creates a new certificate manager
 func NewCertManager(caCertPath, caKeyPath string) (*CertManager, error) {
+	// Clean and validate paths to prevent path traversal
+	caCertPath = filepath.Clean(caCertPath)
+	caKeyPath = filepath.Clean(caKeyPath)
+
 	// Load CA certificate
 	caCertPEM, err := os.ReadFile(caCertPath)
 	if err != nil {
@@ -179,7 +183,7 @@ func (cm *CertManager) GetCACertificate() []byte {
 func GenerateCA(certPath, keyPath string) error {
 	// Ensure directory exists
 	dir := filepath.Dir(certPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
@@ -219,7 +223,7 @@ func GenerateCA(certPath, keyPath string) error {
 
 	// Encode certificate to PEM and save
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
-	if err := os.WriteFile(certPath, certPEM, 0644); err != nil {
+	if err := os.WriteFile(certPath, certPEM, 0600); err != nil {
 		return fmt.Errorf("failed to write certificate: %w", err)
 	}
 

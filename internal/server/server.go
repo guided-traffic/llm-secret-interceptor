@@ -145,7 +145,9 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(status)
+	if err := json.NewEncoder(w).Encode(status); err != nil {
+		http.Error(w, "Failed to encode status", http.StatusInternalServerError)
+	}
 }
 
 // readyHandler indicates if the service is ready to receive traffic
@@ -164,14 +166,20 @@ func (s *Server) readyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("ready"))
+	if _, err := w.Write([]byte("ready")); err != nil {
+		// Connection closed, nothing we can do
+		return
+	}
 }
 
 // liveHandler indicates if the service is alive
 func (s *Server) liveHandler(w http.ResponseWriter, r *http.Request) {
 	// Simple liveness check - if we can respond, we're alive
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("alive"))
+	if _, err := w.Write([]byte("alive")); err != nil {
+		// Connection closed, nothing we can do
+		return
+	}
 }
 
 // Handler returns the HTTP handler for testing

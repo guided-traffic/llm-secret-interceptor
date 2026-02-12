@@ -76,7 +76,10 @@ func (s *SecretService) ProcessRequest(body []byte, handler protocol.Handler) *P
 					replaceResult.Text = replaceWithPlaceholder(replaceResult.Text, ph, existingPh)
 				} else {
 					// Store new mapping
-					s.store.Store(ph, secret)
+					if err := s.store.Store(ph, secret); err != nil {
+						// Storage error - continue but log
+						result.Error = err
+					}
 				}
 			}
 

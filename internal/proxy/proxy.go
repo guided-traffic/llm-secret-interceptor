@@ -93,8 +93,12 @@ func (s *Server) Start() error {
 	s.logger.Info().Str("listen", s.config.Proxy.Listen).Msg("Starting proxy server")
 
 	s.httpServer = &http.Server{
-		Addr:    s.config.Proxy.Listen,
-		Handler: s,
+		Addr:              s.config.Proxy.Listen,
+		Handler:           s,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
 		// Disable HTTP/2 for easier request manipulation
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
 	}
@@ -174,20 +178,25 @@ func (s *Server) handleConnect(w http.ResponseWriter, r *http.Request) {
 	_, err = clientConn.Write([]byte("HTTP/1.1 200 Connection Established\r\n\r\n"))
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to send connection established")
-		clientConn.Close()
+		if closeErr := clientConn.Close(); closeErr != nil {
+			s.logger.Debug().Err(closeErr).Msg("Failed to close client connection")
+		}
 		return
 	}
 
 	// Create TLS config with dynamic certificate
 	tlsConfig := &tls.Config{
 		GetCertificate: s.certManager.GetCertificate,
+		MinVersion:     tls.VersionTLS12,
 	}
 
 	// Wrap client connection with TLS
 	tlsClientConn := tls.Server(clientConn, tlsConfig)
 	if err := tlsClientConn.Handshake(); err != nil {
 		s.logger.Error().Err(err).Msg("TLS handshake failed")
-		clientConn.Close()
+		if closeErr := clientConn.Close(); closeErr != nil {
+			s.logger.Debug().Err(closeErr).Msg("Failed to close client connection")
+		}
 		return
 	}
 
@@ -228,7 +237,9 @@ func (s *Server) handleTLSConnection(clientConn *tls.Conn, targetHost string) {
 		processedResp, err := s.processResponse(resp)
 		if err != nil {
 			s.logger.Error().Err(err).Msg("Failed to process response")
-			resp.Body.Close()
+			if closeErr := resp.Body.Close(); closeErr != nil {
+				s.logger.Debug().Err(closeErr).Msg("Failed to close response body")
+			}
 			s.sendErrorResponse(clientConn, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -236,10 +247,14 @@ func (s *Server) handleTLSConnection(clientConn *tls.Conn, targetHost string) {
 		// Write response back to client
 		if err := processedResp.Write(clientConn); err != nil {
 			s.logger.Debug().Err(err).Msg("Failed to write response")
-			processedResp.Body.Close()
+			if closeErr := processedResp.Body.Close(); closeErr != nil {
+				s.logger.Debug().Err(closeErr).Msg("Failed to close processed response body")
+			}
 			return
 		}
-		processedResp.Body.Close()
+		if closeErr := processedResp.Body.Close(); closeErr != nil {
+			s.logger.Debug().Err(closeErr).Msg("Failed to close processed response body")
+		}
 	}
 }
 
@@ -264,7 +279,9 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(resp.StatusCode)
 
 	// Copy body
-	io.Copy(w, resp.Body)
+	if _, err := io.Copy(w, resp.Body); err != nil {
+		s.logger.Debug().Err(err).Msg("Failed to copy response body")
+	}
 }
 
 // processRequest intercepts and modifies outgoing requests
@@ -284,7 +301,9 @@ func (s *Server) processRequest(req *http.Request) (*http.Response, error) {
 
 	// Read request body
 	body, err := io.ReadAll(req.Body)
-	req.Body.Close()
+	if closeErr := req.Body.Close(); closeErr != nil {
+		s.logger.Debug().Err(closeErr).Msg("Failed to close request body")
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to read request body: %w", err)
 	}
@@ -379,7 +398,9 @@ func (s *Server) processResponse(resp *http.Response) (*http.Response, error) {
 func (s *Server) processJSONResponse(resp *http.Response) (*http.Response, error) {
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	if closeErr := resp.Body.Close(); closeErr != nil {
+		s.logger.Debug().Err(closeErr).Msg("Failed to close response body")
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
@@ -467,7 +488,9 @@ func (s *Server) processStreamingResponse(resp *http.Response) (*http.Response, 
 						}
 						return secret, found
 					})
-					pw.Write([]byte(restored))
+					if _, writeErr := pw.Write([]byte(restored)); writeErr != nil {
+						s.logger.Debug().Err(writeErr).Msg("Error writing final buffer to pipe")
+					}
 				}
 				return
 			}
@@ -505,7 +528,9 @@ func (s *Server) sendErrorResponse(conn net.Conn, statusCode int, message string
 	}
 	resp.Header.Set("Content-Type", "text/plain")
 	resp.Header.Set("Content-Length", fmt.Sprintf("%d", len(message)))
-	resp.Write(conn)
+	if err := resp.Write(conn); err != nil {
+		s.logger.Debug().Err(err).Msg("Failed to write error response")
+	}
 }
 
 // UpdateMappingStoreSize updates the mapping store size metric

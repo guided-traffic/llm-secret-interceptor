@@ -100,10 +100,20 @@ func main() {
 			mux.Handle(cfg.Metrics.Endpoint, promhttp.Handler())
 			mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("OK"))
+				if _, err := w.Write([]byte("OK")); err != nil {
+					logger.Debug().Err(err).Msg("Failed to write health response")
+				}
 			})
 			logger.Info().Str("addr", metricsAddr).Msg("Starting metrics server")
-			if err := http.ListenAndServe(metricsAddr, mux); err != nil {
+			metricsServer := &http.Server{
+				Addr:              metricsAddr,
+				Handler:           mux,
+				ReadHeaderTimeout: 10 * time.Second,
+				ReadTimeout:       30 * time.Second,
+				WriteTimeout:      30 * time.Second,
+				IdleTimeout:       60 * time.Second,
+			}
+			if err := metricsServer.ListenAndServe(); err != nil {
 				logger.Error().Err(err).Msg("Metrics server error")
 			}
 		}()
