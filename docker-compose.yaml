@@ -1,0 +1,68 @@
+services:
+  proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${VERSION:-dev}
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+    image: llm-secret-interceptor:${VERSION:-latest}
+    container_name: llm-secret-interceptor
+    restart: unless-stopped
+    ports:
+      - "8080:8080"   # Proxy
+      - "9090:9090"   # Metrics/Health
+    volumes:
+      # Persist CA certificates
+      - ./certs:/app/certs
+      # Mount custom config (optional)
+      - ./configs/config.yaml:/app/configs/config.yaml:ro
+    environment:
+      # Proxy settings
+      - LLM_PROXY_LISTEN=:8080
+      - LLM_PROXY_METRICS_PORT=9090
+
+      # TLS settings
+      - LLM_PROXY_TLS_CA_CERT=/app/certs/ca.crt
+      - LLM_PROXY_TLS_CA_KEY=/app/certs/ca.key
+
+      # Storage settings (use redis for multi-instance)
+      - LLM_PROXY_STORAGE_TYPE=${STORAGE_TYPE:-memory}
+      - LLM_PROXY_REDIS_ADDR=redis:6379
+
+      # Logging
+      - LLM_PROXY_LOG_LEVEL=${LOG_LEVEL:-info}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - llm-proxy-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: llm-proxy-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - llm-proxy-net
+
+volumes:
+  redis-data:
+
+networks:
+  llm-proxy-net:
+    driver: bridge

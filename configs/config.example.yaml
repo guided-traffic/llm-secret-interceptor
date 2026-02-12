@@ -1,0 +1,48 @@
+# config.yaml - LLM Secret Interceptor Configuration
+
+proxy:
+  listen: ":8080"
+
+tls:
+  ca_cert: "./certs/ca.crt"
+  ca_key: "./certs/ca.key"
+
+storage:
+  # "memory" für Single-Instance, "redis" für Multi-Instance
+  type: "memory"
+  redis:
+    address: "localhost:6379"
+    password: ""
+    db: 0
+  ttl: "24h"  # Mappings werden nach 24h Inaktivität gelöscht
+
+placeholder:
+  prefix: "__SECRET_"
+  suffix: "__"
+
+interceptors:
+  entropy:
+    enabled: true
+    threshold: 4.5  # Shannon-Entropie Schwellenwert
+    min_length: 8
+    max_length: 128
+
+  bitwarden:
+    enabled: false
+    server_url: "https://vault.bitwarden.com"
+    # Credentials via Environment-Variablen:
+    # BITWARDEN_EMAIL
+    # BITWARDEN_PASSWORD
+
+logging:
+  level: "info"  # debug, info, warn, error
+  audit:
+    enabled: true
+    log_interceptor_name: true
+    log_secret_type: true
+    # Secrets selbst werden NIEMALS geloggt!
+
+metrics:
+  enabled: true
+  endpoint: "/metrics"
+  port: 9090

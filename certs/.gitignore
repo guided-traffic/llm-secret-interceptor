@@ -1,0 +1,6 @@
+# Certificates directory
+# CA certificate and key will be generated here on first startup
+*.crt
+*.key
+*.pem
+!.gitkeep
