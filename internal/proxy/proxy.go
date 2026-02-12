@@ -1,3 +1,4 @@
+// Package proxy provides the HTTPS proxy server with TLS interception and secret masking.
 package proxy
 
 import (
@@ -103,7 +104,8 @@ func (s *Server) Start() error {
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
 	}
 
-	ln, err := net.Listen("tcp", s.config.Proxy.Listen)
+	lc := net.ListenConfig{}
+	ln, err := lc.Listen(context.Background(), "tcp", s.config.Proxy.Listen)
 	if err != nil {
 		return fmt.Errorf("failed to listen: %w", err)
 	}
@@ -192,7 +194,9 @@ func (s *Server) handleConnect(w http.ResponseWriter, r *http.Request) {
 
 	// Wrap client connection with TLS
 	tlsClientConn := tls.Server(clientConn, tlsConfig)
-	if err := tlsClientConn.Handshake(); err != nil {
+	handshakeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := tlsClientConn.HandshakeContext(handshakeCtx); err != nil {
 		s.logger.Error().Err(err).Msg("TLS handshake failed")
 		if closeErr := clientConn.Close(); closeErr != nil {
 			s.logger.Debug().Err(closeErr).Msg("Failed to close client connection")
@@ -206,7 +210,11 @@ func (s *Server) handleConnect(w http.ResponseWriter, r *http.Request) {
 
 // handleTLSConnection processes requests over an intercepted TLS connection
 func (s *Server) handleTLSConnection(clientConn *tls.Conn, targetHost string) {
-	defer clientConn.Close()
+	defer func() {
+		if err := clientConn.Close(); err != nil {
+			s.logger.Debug().Err(err).Msg("Failed to close TLS client connection")
+		}
+	}()
 
 	reader := bufio.NewReader(clientConn)
 
@@ -268,7 +276,11 @@ func (s *Server) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			s.logger.Debug().Err(err).Msg("Failed to close response body")
+		}
+	}()
 
 	// Copy headers
 	for key, values := range resp.Header {
@@ -362,7 +374,7 @@ func (s *Server) processRequest(req *http.Request) (*http.Response, error) {
 	}
 
 	// Create new request with modified body
-	newReq, err := http.NewRequest(req.Method, req.URL.String(), io.NopCloser(newBytesReader(body)))
+	newReq, err := http.NewRequestWithContext(req.Context(), req.Method, req.URL.String(), io.NopCloser(newBytesReader(body)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -429,8 +441,16 @@ func (s *Server) processStreamingResponse(resp *http.Response) (*http.Response, 
 
 	// Start goroutine to process stream
 	go func() {
-		defer pw.Close()
-		defer resp.Body.Close()
+		defer func() {
+			if err := pw.Close(); err != nil {
+				s.logger.Debug().Err(err).Msg("Failed to close pipe writer")
+			}
+		}()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				s.logger.Debug().Err(err).Msg("Failed to close response body")
+			}
+		}()
 
 		// Buffer for read-ahead
 		bufferSize := s.placeholder.MaxLength()

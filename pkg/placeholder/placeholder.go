@@ -1,3 +1,4 @@
+// Package placeholder provides placeholder generation and restoration for secret masking.
 package placeholder
 
 import (

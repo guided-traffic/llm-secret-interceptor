@@ -8,18 +8,64 @@ run:
 linters:
   enable:
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
     - unused
-    - gofmt
-    - goimports
     - misspell
-    - unconvert
     - gocritic
     - revive
     - gosec
     - bodyclose
     - noctx
-    - prealloc
+  exclusions:
+    rules:
+      # Allow hardcoded credentials in test files (test data)
+      - linters:
+          - gosec
+        path: _test\.go
+        text: "G101:"
+      # Allow file inclusion via variable in test files
+      - linters:
+          - gosec
+        path: _test\.go
+        text: "G304:"
+      # Allow G104 (unhandled errors) in test files
+      - linters:
+          - gosec
+        path: _test\.go
+        text: "G104:"
+      # Allow unchecked errors in test cleanup (defer Close())
+      - linters:
+          - errcheck
+        path: _test\.go
+        text: "Close"
+      # Allow unchecked errors in test setup
+      - linters:
+          - errcheck
+        path: _test\.go
+        text: "(Store|Touch|Cleanup|RemoveAll)"
+      # Allow http.NewRequest in tests (noctx)
+      - linters:
+          - noctx
+        path: _test\.go
+      # Allow unused parameters in test mocks
+      - linters:
+          - revive
+        path: _test\.go
+        text: "unused-parameter"
+      # Allow bodyclose false positives where response body is handled by called function
+      - linters:
+          - bodyclose
+        path: proxy\.go
+        text: "response body must be closed"
+      # Allow metrics package name (common convention for Prometheus metrics)
+      - linters:
+          - revive
+        path: internal/metrics/
+        text: "var-naming: avoid package names"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

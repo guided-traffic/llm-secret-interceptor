@@ -61,9 +61,9 @@ func TestGenerator_IsPlaceholder(t *testing.T) {
 		input string
 		want  bool
 	}{
-		{"__SECRET_a1b2c3d4__", true},  // Valid hex hash
-		{"__SECRET_12345678__", true},  // Valid hex hash
-		{"__SECRET_abcdef12__", true},  // Valid hex hash
+		{"__SECRET_a1b2c3d4__", true}, // Valid hex hash
+		{"__SECRET_12345678__", true}, // Valid hex hash
+		{"__SECRET_abcdef12__", true}, // Valid hex hash
 		{"not a placeholder", false},
 		{"__SECRET_short__", false},    // Too short hash (5 chars)
 		{"SECRET_a1b2c3d4", false},     // Missing prefix (__) and suffix

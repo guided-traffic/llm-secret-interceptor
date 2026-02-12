@@ -1,3 +1,4 @@
+// Package main provides the entry point for the LLM Secret Interceptor proxy server.
 package main
 
 import (
@@ -98,7 +99,7 @@ func main() {
 			metricsAddr := fmt.Sprintf(":%d", cfg.Metrics.Port)
 			mux := http.NewServeMux()
 			mux.Handle(cfg.Metrics.Endpoint, promhttp.Handler())
-			mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+			mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				if _, err := w.Write([]byte("OK")); err != nil {
 					logger.Debug().Err(err).Msg("Failed to write health response")

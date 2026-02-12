@@ -61,14 +61,22 @@ func (h *mockStreamingHandler) SerializeStreamChunk(chunk *protocol.StreamChunk)
 }
 
 // Implement remaining Handler interface methods for StreamingHandler
-func (h *mockStreamingHandler) Name() string                                   { return "mock" }
-func (h *mockStreamingHandler) CanHandle(_ *http.Request) bool                 { return true }
-func (h *mockStreamingHandler) Priority() int                                  { return 100 }
-func (h *mockStreamingHandler) ParseRequest(_ []byte) (*protocol.StandardMessage, error) { return nil, nil }
-func (h *mockStreamingHandler) ParseResponse(_ []byte) (*protocol.StandardMessage, error) { return nil, nil }
-func (h *mockStreamingHandler) SerializeRequest(_ *protocol.StandardMessage) ([]byte, error) { return nil, nil }
-func (h *mockStreamingHandler) SerializeResponse(_ *protocol.StandardMessage) ([]byte, error) { return nil, nil }
-func (h *mockStreamingHandler) IsStreaming(_ []byte) bool                      { return true }
+func (h *mockStreamingHandler) Name() string                   { return "mock" }
+func (h *mockStreamingHandler) CanHandle(_ *http.Request) bool { return true }
+func (h *mockStreamingHandler) Priority() int                  { return 100 }
+func (h *mockStreamingHandler) ParseRequest(_ []byte) (*protocol.StandardMessage, error) {
+	return nil, nil
+}
+func (h *mockStreamingHandler) ParseResponse(_ []byte) (*protocol.StandardMessage, error) {
+	return nil, nil
+}
+func (h *mockStreamingHandler) SerializeRequest(_ *protocol.StandardMessage) ([]byte, error) {
+	return nil, nil
+}
+func (h *mockStreamingHandler) SerializeResponse(_ *protocol.StandardMessage) ([]byte, error) {
+	return nil, nil
+}
+func (h *mockStreamingHandler) IsStreaming(_ []byte) bool { return true }
 
 func TestStreamProcessor_ProcessChunk_NoPlaceholders(t *testing.T) {
 	// Setup
@@ -329,7 +337,7 @@ func BenchmarkStreamProcessor_ProcessChunk(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var output bytes.Buffer
 		processor := NewStreamProcessor(service, handler, &output, 30)
-		processor.ProcessChunk(chunk)
-		processor.Flush()
+		_ = processor.ProcessChunk(chunk)
+		_ = processor.Flush()
 	}
 }

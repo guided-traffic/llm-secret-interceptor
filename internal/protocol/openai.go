@@ -1,3 +1,4 @@
+// Package protocol provides LLM API protocol handlers for parsing and serializing requests/responses.
 package protocol
 
 import (
@@ -13,32 +14,32 @@ type OpenAIHandler struct{}
 // OpenAI API request structure
 // We use json.RawMessage for unknown fields to preserve them
 type openAIRequest struct {
-	Model            string           `json:"model"`
-	Messages         []openAIMessage  `json:"messages"`
-	Stream           bool             `json:"stream,omitempty"`
-	Temperature      *float64         `json:"temperature,omitempty"`
-	TopP             *float64         `json:"top_p,omitempty"`
-	N                *int             `json:"n,omitempty"`
-	MaxTokens        *int             `json:"max_tokens,omitempty"`
-	PresencePenalty  *float64         `json:"presence_penalty,omitempty"`
-	FrequencyPenalty *float64         `json:"frequency_penalty,omitempty"`
-	User             string           `json:"user,omitempty"`
-	Stop             json.RawMessage  `json:"stop,omitempty"`
-	Tools            json.RawMessage  `json:"tools,omitempty"`
-	ToolChoice       json.RawMessage  `json:"tool_choice,omitempty"`
-	ResponseFormat   json.RawMessage  `json:"response_format,omitempty"`
-	Seed             *int             `json:"seed,omitempty"`
-	Logprobs         *bool            `json:"logprobs,omitempty"`
-	TopLogprobs      *int             `json:"top_logprobs,omitempty"`
+	Model            string          `json:"model"`
+	Messages         []openAIMessage `json:"messages"`
+	Stream           bool            `json:"stream,omitempty"`
+	Temperature      *float64        `json:"temperature,omitempty"`
+	TopP             *float64        `json:"top_p,omitempty"`
+	N                *int            `json:"n,omitempty"`
+	MaxTokens        *int            `json:"max_tokens,omitempty"`
+	PresencePenalty  *float64        `json:"presence_penalty,omitempty"`
+	FrequencyPenalty *float64        `json:"frequency_penalty,omitempty"`
+	User             string          `json:"user,omitempty"`
+	Stop             json.RawMessage `json:"stop,omitempty"`
+	Tools            json.RawMessage `json:"tools,omitempty"`
+	ToolChoice       json.RawMessage `json:"tool_choice,omitempty"`
+	ResponseFormat   json.RawMessage `json:"response_format,omitempty"`
+	Seed             *int            `json:"seed,omitempty"`
+	Logprobs         *bool           `json:"logprobs,omitempty"`
+	TopLogprobs      *int            `json:"top_logprobs,omitempty"`
 }
 
 type openAIMessage struct {
-	Role         string          `json:"role"`
-	Content      json.RawMessage `json:"content"` // Can be string or array of content parts
-	Name         string          `json:"name,omitempty"`
-	ToolCalls    json.RawMessage `json:"tool_calls,omitempty"`
-	ToolCallID   string          `json:"tool_call_id,omitempty"`
-	Refusal      string          `json:"refusal,omitempty"`
+	Role       string          `json:"role"`
+	Content    json.RawMessage `json:"content"` // Can be string or array of content parts
+	Name       string          `json:"name,omitempty"`
+	ToolCalls  json.RawMessage `json:"tool_calls,omitempty"`
+	ToolCallID string          `json:"tool_call_id,omitempty"`
+	Refusal    string          `json:"refusal,omitempty"`
 }
 
 // getContentString extracts string content from the message
@@ -75,13 +76,13 @@ func (m *openAIMessage) setContentString(s string) {
 
 // OpenAI API response structure
 type openAIResponse struct {
-	ID                string           `json:"id"`
-	Object            string           `json:"object"`
-	Created           int64            `json:"created"`
-	Model             string           `json:"model"`
-	Choices           []openAIChoice   `json:"choices"`
-	Usage             *openAIUsage     `json:"usage,omitempty"`
-	SystemFingerprint string           `json:"system_fingerprint,omitempty"`
+	ID                string         `json:"id"`
+	Object            string         `json:"object"`
+	Created           int64          `json:"created"`
+	Model             string         `json:"model"`
+	Choices           []openAIChoice `json:"choices"`
+	Usage             *openAIUsage   `json:"usage,omitempty"`
+	SystemFingerprint string         `json:"system_fingerprint,omitempty"`
 }
 
 type openAIUsage struct {
@@ -159,8 +160,8 @@ func (h *OpenAIHandler) ParseRequest(body []byte) (*StandardMessage, error) {
 	msg := &StandardMessage{
 		Messages: make([]Message, len(req.Messages)),
 		Metadata: map[string]interface{}{
-			"model":       req.Model,
-			"stream":      req.Stream,
+			"model":        req.Model,
+			"stream":       req.Stream,
 			"_raw_request": body, // Keep raw request for fields we don't parse
 		},
 	}

@@ -1,3 +1,4 @@
+// Package server provides HTTP server utilities for health checks and metrics endpoints.
 package server
 
 import (
@@ -25,12 +26,12 @@ type HealthChecker func() (ok bool, message string)
 
 // Server provides HTTP endpoints for metrics and health
 type Server struct {
-	mu       sync.RWMutex
-	server   *http.Server
-	mux      *http.ServeMux
-	checkers map[string]HealthChecker
+	mu        sync.RWMutex
+	server    *http.Server
+	mux       *http.ServeMux
+	checkers  map[string]HealthChecker
 	startTime time.Time
-	version  string
+	version   string
 }
 
 // Config holds management server configuration
@@ -113,7 +114,7 @@ func (s *Server) Stop(ctx context.Context) error {
 }
 
 // healthHandler returns detailed health status
-func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) healthHandler(w http.ResponseWriter, _ *http.Request) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -151,7 +152,7 @@ func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // readyHandler indicates if the service is ready to receive traffic
-func (s *Server) readyHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) readyHandler(w http.ResponseWriter, _ *http.Request) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -160,7 +161,9 @@ func (s *Server) readyHandler(w http.ResponseWriter, r *http.Request) {
 		ok, _ := checker()
 		if !ok {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			fmt.Fprintf(w, "not ready: %s check failed", name)
+			if _, err := fmt.Fprintf(w, "not ready: %s check failed", name); err != nil {
+				return
+			}
 			return
 		}
 	}
@@ -173,7 +176,7 @@ func (s *Server) readyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // liveHandler indicates if the service is alive
-func (s *Server) liveHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) liveHandler(w http.ResponseWriter, _ *http.Request) {
 	// Simple liveness check - if we can respond, we're alive
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write([]byte("alive")); err != nil {

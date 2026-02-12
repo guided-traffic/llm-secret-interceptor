@@ -1,3 +1,4 @@
+// Package config provides configuration management for the LLM Secret Interceptor proxy.
 package config
 
 import (

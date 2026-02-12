@@ -77,13 +77,14 @@ func (p *SSEParser) ReadEvent() (eventType string, data []byte, err error) {
 		}
 
 		// Parse the field
-		if bytes.HasPrefix(line, []byte("event:")) {
+		switch {
+		case bytes.HasPrefix(line, []byte("event:")):
 			eventType = strings.TrimSpace(string(line[6:]))
-		} else if bytes.HasPrefix(line, []byte("data:")) {
+		case bytes.HasPrefix(line, []byte("data:")):
 			data := bytes.TrimPrefix(line, []byte("data:"))
 			data = bytes.TrimSpace(data)
 			dataLines = append(dataLines, data)
-		} else if bytes.HasPrefix(line, []byte(":")) {
+		case bytes.HasPrefix(line, []byte(":")):
 			// Comment, ignore
 			continue
 		}
@@ -132,11 +133,11 @@ func (w *SSEWriter) WriteEvent(eventType string, data []byte) error {
 
 // openAIStreamChunk represents a streaming chunk in OpenAI format
 type openAIStreamChunk struct {
-	ID      string                `json:"id"`
-	Object  string                `json:"object"`
-	Created int64                 `json:"created"`
-	Model   string                `json:"model"`
-	Choices []openAIStreamChoice  `json:"choices"`
+	ID      string               `json:"id"`
+	Object  string               `json:"object"`
+	Created int64                `json:"created"`
+	Model   string               `json:"model"`
+	Choices []openAIStreamChoice `json:"choices"`
 }
 
 type openAIStreamChoice struct {

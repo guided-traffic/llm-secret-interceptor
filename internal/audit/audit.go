@@ -1,3 +1,4 @@
+// Package audit provides audit logging for secret detection and replacement events.
 package audit
 
 import (
@@ -12,16 +13,17 @@ import (
 // EventType represents the type of audit event
 type EventType string
 
+// Audit event types for tracking secret detection and replacement operations.
 const (
-	EventSecretDetected   EventType = "secret_detected"
-	EventSecretReplaced   EventType = "secret_replaced"
+	EventSecretDetected      EventType = "secret_detected"
+	EventSecretReplaced      EventType = "secret_replaced"
 	EventPlaceholderRestored EventType = "placeholder_restored"
-	EventRequestProcessed EventType = "request_processed"
-	EventResponseProcessed EventType = "response_processed"
-	EventMappingCreated   EventType = "mapping_created"
-	EventMappingExpired   EventType = "mapping_expired"
-	EventTLSError         EventType = "tls_error"
-	EventUpstreamError    EventType = "upstream_error"
+	EventRequestProcessed    EventType = "request_processed"
+	EventResponseProcessed   EventType = "response_processed"
+	EventMappingCreated      EventType = "mapping_created"
+	EventMappingExpired      EventType = "mapping_expired"
+	EventTLSError            EventType = "tls_error"
+	EventUpstreamError       EventType = "upstream_error"
 )
 
 // Event represents an audit log event

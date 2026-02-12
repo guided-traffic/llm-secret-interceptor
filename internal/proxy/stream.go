@@ -9,11 +9,11 @@ import (
 
 // StreamProcessor handles streaming response processing with buffering
 type StreamProcessor struct {
-	service       *SecretService
-	handler       protocol.StreamingHandler
-	buffer        *protocol.StreamBuffer
-	writer        io.Writer
-	accumulated   string
+	service     *SecretService
+	handler     protocol.StreamingHandler
+	buffer      *protocol.StreamBuffer
+	writer      io.Writer
+	accumulated string
 }
 
 // NewStreamProcessor creates a new stream processor
@@ -135,7 +135,6 @@ func (sp *StreamProcessor) GetAccumulated() string {
 type StreamReader struct {
 	reader    *protocol.SSEParser
 	processor *StreamProcessor
-	buffer    bytes.Buffer
 	done      bool
 }
 

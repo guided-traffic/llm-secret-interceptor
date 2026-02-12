@@ -1,3 +1,4 @@
+// Package storage provides mapping storage implementations for secret-to-placeholder mappings.
 package storage
 
 import (

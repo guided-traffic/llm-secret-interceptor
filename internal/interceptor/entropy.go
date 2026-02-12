@@ -1,3 +1,4 @@
+// Package interceptor provides secret detection mechanisms including entropy-based and pattern-based detection.
 package interceptor
 
 import (
@@ -176,9 +177,5 @@ func (e *EntropyInterceptor) isLikelyNotSecret(s string) bool {
 
 	// UUIDs are often not secrets (but can be)
 	uuidPattern := regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
-	if uuidPattern.MatchString(lower) {
-		return true
-	}
-
-	return false
+	return uuidPattern.MatchString(lower)
 }

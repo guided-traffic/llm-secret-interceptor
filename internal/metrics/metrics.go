@@ -1,3 +1,4 @@
+// Package metrics provides Prometheus metrics for monitoring the LLM Secret Interceptor proxy.
 package metrics
 
 import (
