@@ -122,22 +122,22 @@ func (h *OpenAIHandler) CanHandle(req *http.Request) bool {
 
 	// Check for common OpenAI-compatible endpoints
 	path := req.URL.Path
-	
+
 	// Direct OpenAI API
 	if strings.Contains(path, "/chat/completions") {
 		return true
 	}
-	
+
 	// Azure OpenAI
 	if strings.Contains(path, "/openai/deployments/") && strings.Contains(path, "/chat/completions") {
 		return true
 	}
-	
+
 	// Anthropic-style (also uses similar format)
 	if strings.Contains(path, "/v1/messages") {
 		return true
 	}
-	
+
 	// GitHub Copilot / VS Code
 	host := req.Host
 	if strings.Contains(host, "api.githubcopilot.com") ||
