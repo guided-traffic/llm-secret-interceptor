@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  llm-secret-interceptor:
+    build:
+      context: .
+      dockerfile: Containerfile
+    ports:
+      - "8080:8080"   # Proxy
+      - "9090:9090"   # Metrics
+    volumes:
+      - ./configs/config.example.yaml:/app/config.yaml:ro
+      - ./certs:/app/certs:ro
+    environment:
+      - CONFIG_PATH=/app/config.yaml
+    depends_on:
+      - redis
+    networks:
+      - llm-proxy
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - llm-proxy
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - llm-proxy
+    profiles:
+      - monitoring
+
+  # Optional: Grafana for dashboards
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - llm-proxy
+    profiles:
+      - monitoring
+
+networks:
+  llm-proxy:
+    driver: bridge
+
+volumes:
+  redis-data:
+  prometheus-data:
+  grafana-data:
