@@ -138,7 +138,7 @@ func (s *Server) Stop() error {
 
 // ServeHTTP handles incoming HTTP requests
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	metrics.RequestsTotal.Inc()
+	metrics.RecordRequest(r.Method, r.Host)
 	start := time.Now()
 
 	if r.Method == http.MethodConnect {
