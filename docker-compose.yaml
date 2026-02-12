@@ -22,15 +22,15 @@ services:
       # Proxy settings
       - LLM_PROXY_LISTEN=:8080
       - LLM_PROXY_METRICS_PORT=9090
-      
+
       # TLS settings
       - LLM_PROXY_TLS_CA_CERT=/app/certs/ca.crt
       - LLM_PROXY_TLS_CA_KEY=/app/certs/ca.key
-      
+
       # Storage settings (use redis for multi-instance)
       - LLM_PROXY_STORAGE_TYPE=${STORAGE_TYPE:-memory}
       - LLM_PROXY_REDIS_ADDR=redis:6379
-      
+
       # Logging
       - LLM_PROXY_LOG_LEVEL=${LOG_LEVEL:-info}
     depends_on:
