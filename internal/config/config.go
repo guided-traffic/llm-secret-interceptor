@@ -42,7 +42,7 @@ type StorageConfig struct {
 // RedisConfig contains Redis connection settings
 type RedisConfig struct {
 	Address  string `yaml:"address"`
-	Password string `yaml:"password"`
+	Password string `yaml:"password"` //#nosec G117 -- Password field is intentional for Redis auth config
 	DB       int    `yaml:"db"`
 }
 
@@ -151,11 +151,11 @@ func Load() (*Config, error) {
 		configPath = "config.yaml"
 	}
 
-	// Clean path to prevent path traversal
-	configPath = filepath.Clean(configPath)
+	// Sanitize and validate path to prevent path traversal
+	configPath = sanitizeConfigPath(configPath)
 
 	// Try to load config file
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(configPath) //#nosec G304 -- config path is sanitized above
 	if err != nil {
 		if os.IsNotExist(err) {
 			// No config file, use defaults
@@ -170,4 +170,24 @@ func Load() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// sanitizeConfigPath cleans and validates a config file path
+func sanitizeConfigPath(path string) string {
+	// Clean the path to remove any . or .. components
+	cleaned := filepath.Clean(path)
+
+	// If path is absolute, use it as-is (operator explicitly set full path)
+	// If relative, ensure it doesn't escape the current directory
+	if !filepath.IsAbs(cleaned) {
+		// Remove any leading ../ components for relative paths
+		for len(cleaned) > 2 && cleaned[:3] == "../" {
+			cleaned = cleaned[3:]
+		}
+		if cleaned == ".." {
+			cleaned = "config.yaml"
+		}
+	}
+
+	return cleaned
 }

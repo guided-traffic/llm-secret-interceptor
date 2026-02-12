@@ -4,7 +4,7 @@ import "time"
 
 // Mapping represents a secret-to-placeholder mapping with metadata
 type Mapping struct {
-	Secret      string
+	Secret      string //#nosec G117 -- Secret field is intentional - this is a secret interceptor
 	Placeholder string
 	LastUsed    time.Time
 	CreatedAt   time.Time

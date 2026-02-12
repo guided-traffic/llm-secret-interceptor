@@ -15,6 +15,11 @@ GOVET := $(GOCMD) vet
 GOFMT := gofmt
 GOLINT := golangci-lint
 
+# Tool versions - managed by Renovate
+GOSEC_VERSION := v2.22.0
+GOVULNCHECK_VERSION := v1.1.4
+GOCYCLO_VERSION := v0.6.0
+
 # Directories
 CMD_DIR := ./cmd/proxy
 BIN_DIR := ./bin
@@ -97,19 +102,19 @@ vet:
 ## gosec: Run security scanner
 gosec:
 	@echo "Running GoSec security scanner..."
-	@which gosec > /dev/null || go install github.com/securego/gosec/v2/cmd/gosec@latest
+	@which gosec > /dev/null || go install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION)
 	gosec -exclude-generated ./...
 
 ## vuln: Run vulnerability check
 vuln:
 	@echo "Running vulnerability check..."
-	@which govulncheck > /dev/null || go install golang.org/x/vuln/cmd/govulncheck@latest
+	@which govulncheck > /dev/null || go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 	govulncheck ./...
 
 ## cyclo: Check cyclomatic complexity
 cyclo:
 	@echo "Checking cyclomatic complexity..."
-	@which gocyclo > /dev/null || go install github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0
+	@which gocyclo > /dev/null || go install github.com/fzipp/gocyclo/cmd/gocyclo@$(GOCYCLO_VERSION)
 	gocyclo -over 15 .
 
 ## clean: Clean build artifacts
