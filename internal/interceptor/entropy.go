@@ -123,59 +123,74 @@ func (e *EntropyInterceptor) entropyToConfidence(entropy float64) float64 {
 	return 0.0
 }
 
+// commonKeywords contains programming keywords and identifiers that are not secrets
+var commonKeywords = map[string]bool{
+	"function": true, "return": true, "import": true, "export": true,
+	"const": true, "class": true, "interface": true, "package": true,
+	"undefined": true, "null": true, "true": true, "false": true,
+	"string": true, "number": true, "boolean": true, "object": true,
+	"async": true, "await": true, "promise": true, "callback": true,
+	"localhost": true, "githubusercontent": true, "example": true,
+}
+
+// uuidPattern matches UUID strings
+var uuidPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+
 // isLikelyNotSecret checks if a string is likely not a secret
 func (e *EntropyInterceptor) isLikelyNotSecret(s string) bool {
 	lower := strings.ToLower(s)
 
-	// All lowercase and looks like a word/path
-	allLower := true
-	hasDigit := false
+	return e.isLowercaseWord(s) ||
+		e.isCommonKeyword(lower) ||
+		e.isPathOrURL(s, lower) ||
+		e.isFileExtension(s, lower) ||
+		e.isShortBase64(s) ||
+		e.isUUID(lower)
+}
+
+// isLowercaseWord checks if string is all lowercase without digits (likely a word)
+func (e *EntropyInterceptor) isLowercaseWord(s string) bool {
 	for _, c := range s {
-		if unicode.IsUpper(c) {
-			allLower = false
-		}
-		if unicode.IsDigit(c) {
-			hasDigit = true
+		if unicode.IsUpper(c) || unicode.IsDigit(c) {
+			return false
 		}
 	}
-	if allLower && !hasDigit {
+	return true
+}
+
+// isCommonKeyword checks if string matches a common programming keyword
+func (e *EntropyInterceptor) isCommonKeyword(lower string) bool {
+	return commonKeywords[lower]
+}
+
+// isPathOrURL checks if string looks like a file path or URL
+func (e *EntropyInterceptor) isPathOrURL(s, lower string) bool {
+	return strings.HasPrefix(s, "/") ||
+		strings.HasPrefix(s, "./") ||
+		strings.HasPrefix(lower, "http") ||
+		strings.HasPrefix(lower, "www")
+}
+
+// isFileExtension checks if string looks like a file with extension
+func (e *EntropyInterceptor) isFileExtension(s, lower string) bool {
+	if strings.HasPrefix(s, ".") {
 		return true
 	}
-
-	// Common programming keywords and identifiers
-	commonPatterns := []string{
-		"function", "return", "import", "export",
-		"const", "class", "interface", "package",
-		"undefined", "null", "true", "false",
-		"string", "number", "boolean", "object",
-		"async", "await", "promise", "callback",
-		"localhost", "githubusercontent", "example",
-	}
-	for _, p := range commonPatterns {
-		if lower == p {
+	fileExtensions := []string{".js", ".ts", ".go", ".py", ".json"}
+	for _, ext := range fileExtensions {
+		if strings.HasSuffix(lower, ext) {
 			return true
 		}
 	}
+	return false
+}
 
-	// File paths and URLs
-	if strings.HasPrefix(s, "/") || strings.HasPrefix(s, "./") ||
-		strings.HasPrefix(lower, "http") || strings.HasPrefix(lower, "www") {
-		return true
-	}
+// isShortBase64 checks if string is short base64 padding (unlikely secret)
+func (e *EntropyInterceptor) isShortBase64(s string) bool {
+	return strings.HasSuffix(s, "==") && len(s) < 20
+}
 
-	// Looks like a file extension or path component
-	if strings.HasPrefix(s, ".") || strings.HasSuffix(lower, ".js") ||
-		strings.HasSuffix(lower, ".ts") || strings.HasSuffix(lower, ".go") ||
-		strings.HasSuffix(lower, ".py") || strings.HasSuffix(lower, ".json") {
-		return true
-	}
-
-	// Base64 padding without enough entropy
-	if strings.HasSuffix(s, "==") && len(s) < 20 {
-		return true
-	}
-
-	// UUIDs are often not secrets (but can be)
-	uuidPattern := regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+// isUUID checks if string matches UUID pattern
+func (e *EntropyInterceptor) isUUID(lower string) bool {
 	return uuidPattern.MatchString(lower)
 }

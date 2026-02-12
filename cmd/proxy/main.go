@@ -23,42 +23,79 @@ var (
 )
 
 func main() {
-	// Parse command line flags
-	if len(os.Args) > 1 {
-		switch os.Args[1] {
-		case "version":
-			fmt.Printf("LLM Secret Interceptor %s\n", Version)
-			fmt.Printf("Git Commit: %s\n", GitCommit)
-			fmt.Printf("Build Time: %s\n", BuildTime)
-			os.Exit(0)
-		case "generate-ca":
-			certPath := "./certs/ca.crt"
-			keyPath := "./certs/ca.key"
-			if len(os.Args) > 2 {
-				certPath = os.Args[2]
-			}
-			if len(os.Args) > 3 {
-				keyPath = os.Args[3]
-			}
-			if err := proxy.GenerateCA(certPath, keyPath); err != nil {
-				fmt.Fprintf(os.Stderr, "Failed to generate CA: %v\n", err)
-				os.Exit(1)
-			}
-			fmt.Printf("CA certificate generated:\n  Certificate: %s\n  Key: %s\n", certPath, keyPath)
-			os.Exit(0)
-		}
+	if handleCommand() {
+		return
 	}
 
-	// Setup logger
-	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
+	logger := setupLogger()
+	cfg := loadConfig(logger)
+	configureLogLevel(cfg)
 
-	// Load configuration
+	logger.Info().
+		Str("version", Version).
+		Str("commit", GitCommit).
+		Msg("Starting LLM Secret Interceptor")
+
+	ensureCA(cfg, logger)
+	server := createServer(cfg, logger)
+	startMetricsServer(cfg, logger)
+	startProxyServer(server, logger, cfg)
+	startMappingStoreUpdater(server)
+	waitForShutdown(server, logger)
+}
+
+// handleCommand processes command line arguments and returns true if a command was handled
+func handleCommand() bool {
+	if len(os.Args) <= 1 {
+		return false
+	}
+
+	switch os.Args[1] {
+	case "version":
+		printVersion()
+		return true
+	case "generate-ca":
+		generateCA()
+		return true
+	}
+	return false
+}
+
+func printVersion() {
+	fmt.Printf("LLM Secret Interceptor %s\n", Version)
+	fmt.Printf("Git Commit: %s\n", GitCommit)
+	fmt.Printf("Build Time: %s\n", BuildTime)
+}
+
+func generateCA() {
+	certPath := "./certs/ca.crt"
+	keyPath := "./certs/ca.key"
+	if len(os.Args) > 2 {
+		certPath = os.Args[2]
+	}
+	if len(os.Args) > 3 {
+		keyPath = os.Args[3]
+	}
+	if err := proxy.GenerateCA(certPath, keyPath); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to generate CA: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("CA certificate generated:\n  Certificate: %s\n  Key: %s\n", certPath, keyPath)
+}
+
+func setupLogger() zerolog.Logger {
+	return zerolog.New(os.Stdout).With().Timestamp().Logger()
+}
+
+func loadConfig(logger zerolog.Logger) *config.Config {
 	cfg, err := config.Load()
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to load configuration")
 	}
+	return cfg
+}
 
-	// Set log level
+func configureLogLevel(cfg *config.Config) {
 	switch cfg.Logging.Level {
 	case "debug":
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
@@ -69,13 +106,9 @@ func main() {
 	default:
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
+}
 
-	logger.Info().
-		Str("version", Version).
-		Str("commit", GitCommit).
-		Msg("Starting LLM Secret Interceptor")
-
-	// Check if CA certificate exists
+func ensureCA(cfg *config.Config, logger zerolog.Logger) {
 	if _, err := os.Stat(cfg.TLS.CACert); os.IsNotExist(err) {
 		logger.Info().Msg("CA certificate not found, generating...")
 		if err := proxy.GenerateCA(cfg.TLS.CACert, cfg.TLS.CAKey); err != nil {
@@ -86,48 +119,53 @@ func main() {
 			Str("key", cfg.TLS.CAKey).
 			Msg("CA certificate generated")
 	}
+}
 
-	// Create proxy server
+func createServer(cfg *config.Config, logger zerolog.Logger) *proxy.Server {
 	server, err := proxy.NewServer(cfg, logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to create proxy server")
 	}
+	return server
+}
 
-	// Start metrics server if enabled
-	if cfg.Metrics.Enabled {
-		go func() {
-			metricsAddr := fmt.Sprintf(":%d", cfg.Metrics.Port)
-			mux := http.NewServeMux()
-			mux.Handle(cfg.Metrics.Endpoint, promhttp.Handler())
-			mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
-				w.WriteHeader(http.StatusOK)
-				if _, err := w.Write([]byte("OK")); err != nil {
-					logger.Debug().Err(err).Msg("Failed to write health response")
-				}
-			})
-			logger.Info().Str("addr", metricsAddr).Msg("Starting metrics server")
-			metricsServer := &http.Server{
-				Addr:              metricsAddr,
-				Handler:           mux,
-				ReadHeaderTimeout: 10 * time.Second,
-				ReadTimeout:       30 * time.Second,
-				WriteTimeout:      30 * time.Second,
-				IdleTimeout:       60 * time.Second,
-			}
-			if err := metricsServer.ListenAndServe(); err != nil {
-				logger.Error().Err(err).Msg("Metrics server error")
-			}
-		}()
+func startMetricsServer(cfg *config.Config, logger zerolog.Logger) {
+	if !cfg.Metrics.Enabled {
+		return
 	}
+	go func() {
+		metricsAddr := fmt.Sprintf(":%d", cfg.Metrics.Port)
+		mux := http.NewServeMux()
+		mux.Handle(cfg.Metrics.Endpoint, promhttp.Handler())
+		mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			if _, err := w.Write([]byte("OK")); err != nil {
+				logger.Debug().Err(err).Msg("Failed to write health response")
+			}
+		})
+		logger.Info().Str("addr", metricsAddr).Msg("Starting metrics server")
+		metricsServer := &http.Server{
+			Addr:              metricsAddr,
+			Handler:           mux,
+			ReadHeaderTimeout: 10 * time.Second,
+			ReadTimeout:       30 * time.Second,
+			WriteTimeout:      30 * time.Second,
+			IdleTimeout:       60 * time.Second,
+		}
+		if err := metricsServer.ListenAndServe(); err != nil {
+			logger.Error().Err(err).Msg("Metrics server error")
+		}
+	}()
+}
 
-	// Start proxy server
+func startProxyServer(server *proxy.Server, logger zerolog.Logger, cfg *config.Config) {
 	if err := server.Start(); err != nil {
 		logger.Fatal().Err(err).Msg("Failed to start proxy server")
 	}
-
 	logger.Info().Str("listen", cfg.Proxy.Listen).Msg("Proxy server started")
+}
 
-	// Update metrics periodically
+func startMappingStoreUpdater(server *proxy.Server) {
 	go func() {
 		ticker := time.NewTicker(10 * time.Second)
 		defer ticker.Stop()
@@ -135,8 +173,9 @@ func main() {
 			server.UpdateMappingStoreSize()
 		}
 	}()
+}
 
-	// Wait for shutdown signal
+func waitForShutdown(server *proxy.Server, logger zerolog.Logger) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
