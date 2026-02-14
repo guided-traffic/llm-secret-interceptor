@@ -40,7 +40,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ vars.DOCKERHUB_USERNAME }}/llm-secret-interceptor
+            guidedtraffic/llm-secret-interceptor
           tags: |
             type=schedule
             type=ref,event=branch
@@ -94,7 +94,7 @@ jobs:
       - name: Generate and upload SBOM
         uses: anchore/sbom-action@v0
         with:
-          image: ${{ vars.DOCKERHUB_USERNAME }}/llm-secret-interceptor:${{ steps.version.outputs.version }}
+          image: guidedtraffic/llm-secret-interceptor:${{ steps.version.outputs.version }}
           format: spdx-json
           upload-artifact: true
           upload-release-assets: false
@@ -113,7 +113,7 @@ jobs:
         uses: docker/scout-action@v1
         with:
           command: cves
-          image: ${{ vars.DOCKERHUB_USERNAME }}/llm-secret-interceptor:${{ steps.version.outputs.version }}
+          image: guidedtraffic/llm-secret-interceptor:${{ steps.version.outputs.version }}
           sarif-file: scout-report.sarif
           summary: true
 
