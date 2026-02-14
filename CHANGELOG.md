@@ -1,3 +1,15 @@
+# [1.1.0](https://github.com/guided-traffic/llm-secret-interceptor/compare/v1.0.2...v1.1.0) (2026-02-14)
+
+
+### Bug Fixes
+
+* update dockerlogin jobs ([30aaac6](https://github.com/guided-traffic/llm-secret-interceptor/commit/30aaac67e37f082dce5051bdf0bf1de2c8fe9f47))
+
+
+### Features
+
+* add helm chart ([#9](https://github.com/guided-traffic/llm-secret-interceptor/issues/9)) ([838831b](https://github.com/guided-traffic/llm-secret-interceptor/commit/838831b13072265971f64bda945a1c34b35051cf))
+
 ## [1.0.2](https://github.com/guided-traffic/llm-secret-interceptor/compare/v1.0.1...v1.0.2) (2026-02-14)
 
 
