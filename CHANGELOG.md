@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/guided-traffic/llm-secret-interceptor/compare/v1.1.0...v1.1.1) (2026-02-14)
+
+
+### Bug Fixes
+
+* docker push username ([c19ebf5](https://github.com/guided-traffic/llm-secret-interceptor/commit/c19ebf5c407e90246bdf1ca2c63dbfee3497c91e))
+
 # [1.1.0](https://github.com/guided-traffic/llm-secret-interceptor/compare/v1.0.2...v1.1.0) (2026-02-14)
 
 
