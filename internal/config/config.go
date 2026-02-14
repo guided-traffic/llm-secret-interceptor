@@ -151,11 +151,24 @@ func Load() (*Config, error) {
 		configPath = "config.yaml"
 	}
 
+	// Get base directory (working directory or CONFIG_BASE_DIR if set)
+	baseDir := os.Getenv("CONFIG_BASE_DIR")
+	if baseDir == "" {
+		var err error
+		baseDir, err = os.Getwd()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get working directory: %w", err)
+		}
+	}
+
 	// Sanitize and validate path to prevent path traversal
-	configPath = sanitizeConfigPath(configPath)
+	safePath, err := sanitizeConfigPath(configPath, baseDir)
+	if err != nil {
+		return nil, fmt.Errorf("invalid config path: %w", err)
+	}
 
 	// Try to load config file
-	data, err := os.ReadFile(configPath) //#nosec G304 -- config path is sanitized above
+	data, err := os.ReadFile(safePath) //#nosec G304,G703 -- path is validated by sanitizeConfigPath to be within baseDir
 	if err != nil {
 		if os.IsNotExist(err) {
 			// No config file, use defaults
@@ -172,22 +185,35 @@ func Load() (*Config, error) {
 	return cfg, nil
 }
 
-// sanitizeConfigPath cleans and validates a config file path
-func sanitizeConfigPath(path string) string {
-	// Clean the path to remove any . or .. components
-	cleaned := filepath.Clean(path)
-
-	// If path is absolute, use it as-is (operator explicitly set full path)
-	// If relative, ensure it doesn't escape the current directory
-	if !filepath.IsAbs(cleaned) {
-		// Remove any leading ../ components for relative paths
-		for len(cleaned) > 2 && cleaned[:3] == "../" {
-			cleaned = cleaned[3:]
-		}
-		if cleaned == ".." {
-			cleaned = "config.yaml"
-		}
+// sanitizeConfigPath validates that the given path is within the allowed base directory.
+// It returns the absolute, cleaned path if valid, or an error if path traversal is detected.
+func sanitizeConfigPath(path, baseDir string) (string, error) {
+	// Clean the base directory to get absolute path
+	absBase, err := filepath.Abs(baseDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve base directory: %w", err)
 	}
 
-	return cleaned
+	// Resolve the config path relative to base directory
+	var targetPath string
+	if filepath.IsAbs(path) {
+		targetPath = filepath.Clean(path)
+	} else {
+		targetPath = filepath.Clean(filepath.Join(absBase, path))
+	}
+
+	// Verify the resolved path is within the base directory
+	// Use filepath.Rel to check if target is within base
+	relPath, err := filepath.Rel(absBase, targetPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve relative path: %w", err)
+	}
+
+	// Check if the relative path escapes the base directory
+	// A path that starts with ".." would escape the base directory
+	if len(relPath) >= 2 && relPath[:2] == ".." {
+		return "", fmt.Errorf("path traversal detected: path escapes base directory")
+	}
+
+	return targetPath, nil
 }
