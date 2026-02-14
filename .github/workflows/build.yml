@@ -116,3 +116,90 @@ jobs:
           image: ${{ vars.DOCKERHUB_USERNAME }}/llm-secret-interceptor:${{ steps.version.outputs.version }}
           sarif-file: scout-report.sarif
           summary: true
+
+  release-helm:
+    name: Release Helm Chart
+    needs: build
+    runs-on: self-hosted
+    permissions:
+      contents: write
+      pages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.12.0
+
+      - name: Update Chart Version
+        run: |
+          # Extract version from release tag (without 'v' prefix)
+          VERSION=${GITHUB_REF_NAME#v}
+          # Update Chart and App version
+          sed -i "s/^version:.*$/version: ${VERSION}/" deploy/helm/llm-secret-interceptor/Chart.yaml
+          sed -i "s/^appVersion:.*$/appVersion: \"${VERSION}\"/" deploy/helm/llm-secret-interceptor/Chart.yaml
+          # Update image tag in values.yaml
+          sed -i "s/^  tag:.*$/  tag: \"${VERSION}\"/" deploy/helm/llm-secret-interceptor/values.yaml
+
+      - name: Create Helm Package
+        run: |
+          cd deploy/helm
+          helm package llm-secret-interceptor/
+          mkdir -p repo
+          mv *.tgz repo/
+          # Create temporary index for the new chart
+          helm repo index repo/ --url https://${{ github.repository_owner }}.github.io/llm-secret-interceptor/
+          cd ../..
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Save Chart Package
+        run: |
+          mkdir -p /tmp/helm-charts
+          cp -r deploy/helm/repo/* /tmp/helm-charts/
+
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v6
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to GitHub Pages
+        run: |
+          # Copy new charts to root directory
+          cp /tmp/helm-charts/*.tgz .
+
+          # Merge with existing index.yaml if present
+          if [ -f index.yaml ]; then
+            # Create temporary folder for merge
+            mkdir -p temp-repo
+            cp *.tgz temp-repo/
+            # Merge with existing index
+            helm repo index temp-repo/ --url https://${{ github.repository_owner }}.github.io/llm-secret-interceptor/ --merge index.yaml
+            cp temp-repo/index.yaml .
+            rm -rf temp-repo
+          else
+            # Create new index if none exists
+            helm repo index . --url https://${{ github.repository_owner }}.github.io/llm-secret-interceptor/
+          fi
+
+          git add --force *.tgz index.yaml
+          git commit -m "Release Helm chart for $GITHUB_REF_NAME"
+          git push --force origin gh-pages
+
+      - name: Update Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.tgz
+            index.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

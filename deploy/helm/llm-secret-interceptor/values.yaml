@@ -1,0 +1,173 @@
+# Default values for llm-secret-interceptor.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: hfi/llm-secret-interceptor
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+service:
+  type: ClusterIP
+  port: 8080
+
+metrics:
+  enabled: true
+  port: 9090
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    labels: {}
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-secret-name: llm-secret-interceptor-tls
+  hosts:
+    - host: llm-proxy.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: llm-secret-interceptor-tls
+  #    hosts:
+  #      - llm-proxy.local
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# TLS Configuration for CA certificate and key
+# These can be provided via existing secret or created from values
+tls:
+  # Use an existing secret containing ca.crt and ca.key
+  existingSecret: ""
+  # Generate a self-signed CA certificate (only if existingSecret is empty)
+  # Note: For production, provide your own CA via existingSecret
+  generateCA: false
+  # CA certificate (PEM format) - only used if existingSecret is empty and generateCA is false
+  caCert: ""
+  # CA private key (PEM format) - only used if existingSecret is empty and generateCA is false
+  caKey: ""
+
+# Application configuration
+# This maps to the config.yaml file
+config:
+  proxy:
+    listen: ":8080"
+
+  storage:
+    # "memory" for single-instance, "redis" for multi-instance
+    type: "memory"
+    redis:
+      address: ""
+      password: ""
+      db: 0
+    ttl: "24h"
+
+  placeholder:
+    prefix: "__SECRET_"
+    suffix: "__"
+
+  interceptors:
+    entropy:
+      enabled: true
+      threshold: 4.5
+      min_length: 8
+      max_length: 128
+
+    bitwarden:
+      enabled: false
+      server_url: "https://vault.bitwarden.com"
+
+  logging:
+    level: "info"
+    audit:
+      enabled: true
+      log_interceptor_name: true
+      log_secret_type: true
+
+  metrics:
+    enabled: true
+    endpoint: "/metrics"
+    port: 9090
+
+# Redis configuration (if using external Redis)
+redis:
+  # Enable bundled Redis (requires redis subchart)
+  enabled: false
+  # External Redis configuration (if redis.enabled is false)
+  external:
+    host: ""
+    port: 6379
+    password: ""
+    db: 0
+
+# Environment variables for secrets (e.g., Bitwarden credentials)
+extraEnv: []
+  # - name: BITWARDEN_EMAIL
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: bitwarden-credentials
+  #       key: email
+  # - name: BITWARDEN_PASSWORD
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: bitwarden-credentials
+  #       key: password
+
+# Extra volume mounts
+extraVolumeMounts: []
+
+# Extra volumes
+extraVolumes: []

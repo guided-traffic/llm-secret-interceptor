@@ -158,6 +158,105 @@ docker run -d \
   llm-secret-interceptor:latest
 ```
 
+### Kubernetes (Helm)
+
+Install using Helm chart:
+
+```bash
+# Add the Helm repository
+helm repo add llm-secret-interceptor https://hfi.github.io/llm-secret-interceptor/
+helm repo update
+
+# Install with default values
+helm install llm-proxy llm-secret-interceptor/llm-secret-interceptor
+
+# Or install with custom values
+helm install llm-proxy llm-secret-interceptor/llm-secret-interceptor \
+  --set config.logging.level=debug \
+  --set config.interceptors.entropy.threshold=4.0
+```
+
+**With existing TLS CA secret:**
+
+```bash
+# Create secret with your CA certificate
+kubectl create secret generic llm-proxy-ca \
+  --from-file=ca.crt=./certs/ca.crt \
+  --from-file=ca.key=./certs/ca.key
+
+# Install with existing secret
+helm install llm-proxy llm-secret-interceptor/llm-secret-interceptor \
+  --set tls.existingSecret=llm-proxy-ca
+```
+
+**With inline CA certificate:**
+
+```bash
+helm install llm-proxy llm-secret-interceptor/llm-secret-interceptor \
+  --set-file tls.caCert=./certs/ca.crt \
+  --set-file tls.caKey=./certs/ca.key
+```
+
+**Full configuration example (values.yaml):**
+
+```yaml
+replicaCount: 2
+
+config:
+  storage:
+    type: "redis"
+  interceptors:
+    entropy:
+      enabled: true
+      threshold: 4.5
+    bitwarden:
+      enabled: true
+      server_url: "https://vault.bitwarden.com"
+  logging:
+    level: "info"
+
+redis:
+  external:
+    host: "redis.default.svc.cluster.local"
+    port: 6379
+
+extraEnv:
+  - name: BITWARDEN_EMAIL
+    valueFrom:
+      secretKeyRef:
+        name: bitwarden-credentials
+        key: email
+  - name: BITWARDEN_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: bitwarden-credentials
+        key: password
+
+tls:
+  existingSecret: "llm-proxy-ca"
+
+metrics:
+  serviceMonitor:
+    enabled: true
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: llm-proxy.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: llm-proxy-tls
+      hosts:
+        - llm-proxy.example.com
+```
+
+```bash
+helm install llm-proxy llm-secret-interceptor/llm-secret-interceptor -f values.yaml
+```
+
 ### Build from Source
 
 ```bash
