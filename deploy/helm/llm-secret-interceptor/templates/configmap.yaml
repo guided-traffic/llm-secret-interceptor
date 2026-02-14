@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "llm-secret-interceptor.fullname" . }}-config
+  labels:
+    {{- include "llm-secret-interceptor.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    proxy:
+      listen: {{ .Values.config.proxy.listen | quote }}
+
+    tls:
+      ca_cert: "/app/certs/ca.crt"
+      ca_key: "/app/certs/ca.key"
+
+    storage:
+      type: {{ .Values.config.storage.type | quote }}
+      {{- if eq .Values.config.storage.type "redis" }}
+      redis:
+        {{- if .Values.redis.enabled }}
+        address: "{{ include "llm-secret-interceptor.fullname" . }}-redis:6379"
+        {{- else if .Values.redis.external.host }}
+        address: "{{ .Values.redis.external.host }}:{{ .Values.redis.external.port }}"
+        {{- else }}
+        address: {{ .Values.config.storage.redis.address | quote }}
+        {{- end }}
+        password: {{ .Values.config.storage.redis.password | quote }}
+        db: {{ .Values.config.storage.redis.db }}
+      {{- end }}
+      ttl: {{ .Values.config.storage.ttl | quote }}
+
+    placeholder:
+      prefix: {{ .Values.config.placeholder.prefix | quote }}
+      suffix: {{ .Values.config.placeholder.suffix | quote }}
+
+    interceptors:
+      entropy:
+        enabled: {{ .Values.config.interceptors.entropy.enabled }}
+        threshold: {{ .Values.config.interceptors.entropy.threshold }}
+        min_length: {{ .Values.config.interceptors.entropy.min_length }}
+        max_length: {{ .Values.config.interceptors.entropy.max_length }}
+
+      bitwarden:
+        enabled: {{ .Values.config.interceptors.bitwarden.enabled }}
+        server_url: {{ .Values.config.interceptors.bitwarden.server_url | quote }}
+
+    logging:
+      level: {{ .Values.config.logging.level | quote }}
+      audit:
+        enabled: {{ .Values.config.logging.audit.enabled }}
+        log_interceptor_name: {{ .Values.config.logging.audit.log_interceptor_name }}
+        log_secret_type: {{ .Values.config.logging.audit.log_secret_type }}
+
+    metrics:
+      enabled: {{ .Values.config.metrics.enabled }}
+      endpoint: {{ .Values.config.metrics.endpoint | quote }}
+      port: {{ .Values.config.metrics.port }}
