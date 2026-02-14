@@ -1,0 +1,26 @@
+apiVersion: v1
+entries:
+  llm-secret-interceptor:
+  - apiVersion: v2
+    appVersion: 1.1.1
+    created: "2026-02-14T12:21:55.629999818Z"
+    description: A Helm chart for LLM Secret Interceptor - HTTPS proxy that intercepts
+      and masks secrets in LLM communications
+    digest: d506a84d23d6f08f48e62751bb961e2f9185e59981617f50b52622f7742767c8
+    home: https://github.com/hfi/llm-secret-interceptor
+    keywords:
+    - llm
+    - proxy
+    - security
+    - secrets
+    - ai
+    maintainers:
+    - name: hfi
+    name: llm-secret-interceptor
+    sources:
+    - https://github.com/hfi/llm-secret-interceptor
+    type: application
+    urls:
+    - https://guided-traffic.github.io/llm-secret-interceptor/llm-secret-interceptor-1.1.1.tgz
+    version: 1.1.1
+generated: "2026-02-14T12:21:55.629045904Z"
