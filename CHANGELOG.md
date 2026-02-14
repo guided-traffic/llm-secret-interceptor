@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/guided-traffic/llm-secret-interceptor/compare/v1.0.0...v1.0.1) (2026-02-13)
+
+
+### Bug Fixes
+
+* renovate ([bfdc5d4](https://github.com/guided-traffic/llm-secret-interceptor/commit/bfdc5d4664e9f8a1f20ec5f4022a61e25790292d))
+
 # 1.0.0 (2026-02-12)
 
 
