@@ -16,7 +16,7 @@ GOFMT := gofmt
 GOLINT := golangci-lint
 
 # Tool versions - managed by Renovate
-GOLANGCI_LINT_VERSION := v2.9.0
+GOLANGCI_LINT_VERSION := v2.10.1
 GOSEC_VERSION := v2.23.0
 GOVULNCHECK_VERSION := v1.1.4
 GOCYCLO_VERSION := v0.6.0
