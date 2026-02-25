@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/guided-traffic/llm-secret-interceptor/compare/v1.1.1...v1.1.2) (2026-02-25)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/redis/go-redis/v9 to v9.18.0 ([#11](https://github.com/guided-traffic/llm-secret-interceptor/issues/11)) ([5d0d107](https://github.com/guided-traffic/llm-secret-interceptor/commit/5d0d107e6aede303329b6036442a4ba33b445f49))
+
 ## [1.1.1](https://github.com/guided-traffic/llm-secret-interceptor/compare/v1.1.0...v1.1.1) (2026-02-14)
 
 
