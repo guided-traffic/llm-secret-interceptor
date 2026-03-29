@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/guided-traffic/llm-secret-interceptor/compare/v1.1.2...v1.1.3) (2026-03-29)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/rs/zerolog to v1.35.0 ([#28](https://github.com/guided-traffic/llm-secret-interceptor/issues/28)) ([136122b](https://github.com/guided-traffic/llm-secret-interceptor/commit/136122b2b562c8ddc7859a285445021e8d6e4ff2))
+
 ## [1.1.2](https://github.com/guided-traffic/llm-secret-interceptor/compare/v1.1.1...v1.1.2) (2026-02-25)
 
 
