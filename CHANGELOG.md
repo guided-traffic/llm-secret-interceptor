@@ -1,3 +1,10 @@
+## [1.1.9](https://github.com/guided-traffic/llm-secret-interceptor/compare/v1.1.8...v1.1.9) (2026-07-22)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/prometheus/client_golang to v1.24.0 ([#63](https://github.com/guided-traffic/llm-secret-interceptor/issues/63)) ([8effdea](https://github.com/guided-traffic/llm-secret-interceptor/commit/8effdea4f85406b5c542e22b55fa4b9b4ae650aa))
+
 ## [1.1.8](https://github.com/guided-traffic/llm-secret-interceptor/compare/v1.1.7...v1.1.8) (2026-06-24)
 
 
