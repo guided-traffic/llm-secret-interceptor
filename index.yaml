@@ -2,8 +2,30 @@ apiVersion: v1
 entries:
   llm-secret-interceptor:
   - apiVersion: v2
+    appVersion: 1.1.12
+    created: "2026-10-07T08:35:25.160629044Z"
+    description: A Helm chart for LLM Secret Interceptor - HTTPS proxy that intercepts
+      and masks secrets in LLM communications
+    digest: f365395e3d3693cca4133c72997d551eace685d5da7da7f0b5d2b39a7f1f43bc
+    home: https://github.com/hfi/llm-secret-interceptor
+    keywords:
+    - llm
+    - proxy
+    - security
+    - secrets
+    - ai
+    maintainers:
+    - name: hfi
+    name: llm-secret-interceptor
+    sources:
+    - https://github.com/hfi/llm-secret-interceptor
+    type: application
+    urls:
+    - https://guided-traffic.github.io/llm-secret-interceptor/llm-secret-interceptor-1.1.12.tgz
+    version: 1.1.12
+  - apiVersion: v2
     appVersion: 1.1.11
-    created: "2026-08-05T05:23:18.251630442Z"
+    created: "2026-10-07T08:35:25.160010136Z"
     description: A Helm chart for LLM Secret Interceptor - HTTPS proxy that intercepts
       and masks secrets in LLM communications
     digest: 3aef0fe2737588e7075fefc1e44327848a6810b9ff133bc67d47010783f61c04
@@ -25,7 +47,7 @@ entries:
     version: 1.1.11
   - apiVersion: v2
     appVersion: 1.1.10
-    created: "2026-08-05T05:23:18.250868893Z"
+    created: "2026-10-07T08:35:25.159249071Z"
     description: A Helm chart for LLM Secret Interceptor - HTTPS proxy that intercepts
       and masks secrets in LLM communications
     digest: 3484dbf685f8dfe9553f719f410cd737669e7b7b1ec3ca807b4de12ee57a2ee8
@@ -47,7 +69,7 @@ entries:
     version: 1.1.10
   - apiVersion: v2
     appVersion: 1.1.9
-    created: "2026-08-05T05:23:18.255078654Z"
+    created: "2026-10-07T08:35:25.165778427Z"
     description: A Helm chart for LLM Secret Interceptor - HTTPS proxy that intercepts
       and masks secrets in LLM communications
     digest: 5874d5195be2c9d9d6829dc6a3971defa1ee1f433dec839df1d617bc0b0bc0fd
@@ -69,7 +91,7 @@ entries:
     version: 1.1.9
   - apiVersion: v2
     appVersion: 1.1.8
-    created: "2026-08-05T05:23:18.254528634Z"
+    created: "2026-10-07T08:35:25.165179988Z"
     description: A Helm chart for LLM Secret Interceptor - HTTPS proxy that intercepts
       and masks secrets in LLM communications
     digest: 2f18e4f89c275211da2eb052474029f543006efada6dce4d8b41237bab435124
@@ -91,7 +113,7 @@ entries:
     version: 1.1.8
   - apiVersion: v2
     appVersion: 1.1.7
-    created: "2026-08-05T05:23:18.254055659Z"
+    created: "2026-10-07T08:35:25.164420577Z"
     description: A Helm chart for LLM Secret Interceptor - HTTPS proxy that intercepts
       and masks secrets in LLM communications
     digest: 22afda9f3c16d89d01ab260cdeb23ba9d837c39a83c3725da95da43f18a728cf
@@ -113,7 +135,7 @@ entries:
     version: 1.1.7
   - apiVersion: v2
     appVersion: 1.1.6
-    created: "2026-08-05T05:23:18.253511892Z"
+    created: "2026-10-07T08:35:25.163737808Z"
     description: A Helm chart for LLM Secret Interceptor - HTTPS proxy that intercepts
       and masks secrets in LLM communications
     digest: 862a43b15be09a7b6777910a1bedec594c13e625285ec52a0e2563bda87838b9
@@ -135,7 +157,7 @@ entries:
     version: 1.1.6
   - apiVersion: v2
     appVersion: 1.1.5
-    created: "2026-08-05T05:23:18.253000785Z"
+    created: "2026-10-07T08:35:25.163122908Z"
     description: A Helm chart for LLM Secret Interceptor - HTTPS proxy that intercepts
       and masks secrets in LLM communications
     digest: 94b83c44e56938ccd8f0c9a040a5f64dc1453ceba7b093512bf3bf99b09b3f26
@@ -157,7 +179,7 @@ entries:
     version: 1.1.5
   - apiVersion: v2
     appVersion: 1.1.3
-    created: "2026-08-05T05:23:18.252295751Z"
+    created: "2026-10-07T08:35:25.162356993Z"
     description: A Helm chart for LLM Secret Interceptor - HTTPS proxy that intercepts
       and masks secrets in LLM communications
     digest: 5f04f6064b217fe83e61a05af486b8ff38952fdbb63a26c3172ffc98badb9c42
@@ -179,7 +201,7 @@ entries:
     version: 1.1.3
   - apiVersion: v2
     appVersion: 1.1.1
-    created: "2026-08-05T05:23:18.250149481Z"
+    created: "2026-10-07T08:35:25.158340677Z"
     description: A Helm chart for LLM Secret Interceptor - HTTPS proxy that intercepts
       and masks secrets in LLM communications
     digest: d506a84d23d6f08f48e62751bb961e2f9185e59981617f50b52622f7742767c8
@@ -199,4 +221,4 @@ entries:
     urls:
     - https://guided-traffic.github.io/llm-secret-interceptor/llm-secret-interceptor-1.1.1.tgz
     version: 1.1.1
-generated: "2026-08-05T05:23:18.249457403Z"
+generated: "2026-10-07T08:35:25.157319451Z"
